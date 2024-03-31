@@ -1,0 +1,50 @@
+#include <chrono>    // Library for measuring time
+#include <cstdlib>   // Library for generating random numbers
+#include <iostream>
+#include <time.h>    // Library for accessing time
+
+using namespace std::chrono;
+using namespace std;
+
+// Function to generate random vector
+void randomVector(int vector[], int size) {
+  for (int i = 0; i < size; i++) {
+    vector[i] = rand() % 100;  // Generate random numbers between 0 and 99
+  }
+}
+
+int main() {
+  unsigned long size = 100000000; // Size of the vectors
+  srand(time(0)); // Seed for random number generator based on current time
+  
+  // Variables to store vectors and measure time
+  int *v1, *v2, *v3;
+
+  // Start measuring time
+  auto start = high_resolution_clock::now();
+
+  // Allocate memory for vectors
+  v1 = (int *)malloc(size * sizeof(int));
+  v2 = (int *)malloc(size * sizeof(int));
+  v3 = (int *)malloc(size * sizeof(int));
+
+  // Generate random vectors
+  randomVector(v1, size);
+  randomVector(v2, size);
+
+  // Perform element-wise addition of vectors
+  for (int i = 0; i < size; i++) {
+    v3[i] = v1[i] + v2[i];
+  }
+
+  // Stop measuring time
+  auto stop = high_resolution_clock::now();
+
+  // Calculate duration
+  auto duration = duration_cast<microseconds>(stop - start);
+
+  // Output the time taken by the function
+  cout << "Time taken by function: " << duration.count() << " microseconds" << endl;
+
+  return 0;
+}
