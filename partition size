@@ -1,0 +1,68 @@
+#include <iostream>
+#include <thread>
+#include <vector>
+#include <cstdlib>
+#include <ctime>
+#include <chrono>
+
+using namespace std;
+using namespace std::chrono;
+
+void randomVector(int vector[], int size) {
+    for (int i = 0; i < size; i++) {
+        vector[i] = rand() % 100;
+    }
+}
+
+void addArrays(int result[], int v1[], int v2[], int start, int end) {
+    for (int i = start; i < end; i++) {
+        result[i] = v1[i] + v2[i];
+    }
+}
+
+int main() {
+    unsigned long size = 100000000; 
+    srand(time(0)); 
+
+    int *v1 = new int[size];
+    int *v2 = new int[size];
+    int *v3 = new int[size];
+
+    randomVector(v1, size);
+    randomVector(v2, size);
+
+    const int num_threads = 4; 
+    vector<thread> threads;
+ 
+    for (int partition_size = 10000; partition_size <= 10000000; partition_size *= 10) {
+        auto start_par = high_resolution_clock::now();
+        
+        int chunk_size = partition_size;
+        int remainder = size % chunk_size;
+        int start_index = 0;
+        for (int i = 0; i < num_threads; i++) {
+            int end_index = start_index + chunk_size;
+            if (i == num_threads - 1) {
+                end_index += remainder;
+            }
+            threads.push_back(thread(addArrays, v3, v1, v2, start_index, end_index));
+            start_index = end_index;
+        }
+
+        for (auto& t : threads) {
+            t.join();
+        }
+
+        auto stop_par = high_resolution_clock::now();
+        auto duration_par = duration_cast<microseconds>(stop_par - start_par);
+        cout << "Partition size: " << partition_size << ", Time taken by parallel version: " << duration_par.count() << " microseconds" << endl; 
+      
+        threads.clear();
+    }
+
+    delete[] v1;
+    delete[] v2;
+    delete[] v3;
+
+    return 0;
+}
