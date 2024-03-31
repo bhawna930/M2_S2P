@@ -1,0 +1,91 @@
+#include <iostream>
+#include <thread>
+#include <vector>
+#include <cstdlib>
+#include <ctime>
+#include <chrono>
+
+using namespace std;
+using namespace std::chrono;
+
+
+void randomVector(int vector[], int size) {
+    for (int i = 0; i < size; i++) {
+        vector[i] = rand() % 100; // Generate random numbers between 0 and 99
+    }
+}
+
+
+void addArraysSequential(int result[], int v1[], int v2[], int size) {
+    for (int i = 0; i < size; i++) {
+        result[i] = v1[i] + v2[i];
+    }
+}
+
+// Function to add corresponding elements of two arrays in parallel
+void addArraysParallel(int result[], int v1[], int v2[], int start, int end) {
+    for (int i = start; i < end; i++) {
+        result[i] = v1[i] + v2[i];
+    }
+}
+
+int main() {
+    unsigned long size = 100000000; // Size of the arrays
+    srand(time(0)); // Seed for random number generation
+
+    // Allocate memory for arrays
+    int *v1 = new int[size];
+    int *v2 = new int[size];
+    int *v3 = new int[size];
+
+    // Populate arrays with random values
+    randomVector(v1, size);
+    randomVector(v2, size);
+
+    auto start_seq = high_resolution_clock::now(); // Start measuring time for sequential version
+
+    // Sequential version
+    addArraysSequential(v3, v1, v2, size);
+
+    auto stop_seq = high_resolution_clock::now(); // Stop measuring time for sequential version
+    auto duration_seq = duration_cast<microseconds>(stop_seq - start_seq); // Calculate duration for sequential version
+    cout << "Time taken by sequential version: " << duration_seq.count() << " microseconds" << endl; // Print duration for sequential version
+
+    auto start_par = high_resolution_clock::now(); // Start measuring time for parallel version
+
+    const int num_threads = 4; // Number of threads
+    vector<thread> threads; // Vector to store thread objects
+
+    // Divide the work among threads
+    int chunk_size = size / num_threads;
+    int remainder = size % num_threads;
+    int start_index = 0;
+    for (int i = 0; i < num_threads; i++) {
+        int end_index = start_index + chunk_size;
+        if (i == num_threads - 1) {
+            end_index += remainder;
+        }
+        threads.push_back(thread(addArraysParallel, v3, v1, v2, start_index, end_index));
+        start_index = end_index;
+    }
+
+    // Join threads
+    for (auto& t : threads) {
+        t.join();
+    }
+
+    auto stop_par = high_resolution_clock::now(); // Stop measuring time for parallel version
+    auto duration_par = duration_cast<microseconds>(stop_par - start_par); // Calculate duration for parallel version
+    cout << "Time taken by parallel version: " << duration_par.count() << " microseconds" << endl; // Print duration for parallel version
+
+    // Deallocate memory
+    delete[] v1;
+    delete[] v2;
+    delete[] v3;
+
+    // Calculate speedup
+    double speedup = static_cast<double>(duration_seq.count()) / duration_par.count();
+    cout << "Speedup achieved: " << speedup << endl;
+
+    return 0;
+}
